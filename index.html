@@ -1,0 +1,3332 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>شادو روتيت — نظام إدارة الحسابات الاحترافي</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   RESET
+   ============================================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   الوضع الليلي — أسود + أخضر Matrix
+   ============================================================ */
+:root {
+  --matrix: #00ff41;
+  --matrix-dim: #00b32d;
+  --matrix-dark: #004d14;
+  --matrix-glow: rgba(0, 255, 65, 0.5);
+  --matrix-soft: rgba(0, 255, 65, 0.15);
+  --bg-primary: #000000;
+  --bg-secondary: #050a05;
+  --bg-tertiary: #0a120a;
+  --bg-card: rgba(0, 20, 0, 0.85);
+  --bg-input: rgba(0, 0, 0, 0.7);
+  --bg-overlay: rgba(0, 10, 0, 0.95);
+  --border-primary: rgba(0, 255, 65, 0.35);
+  --border-strong: rgba(0, 255, 65, 0.75);
+  --text-primary: #e8f5e8;
+  --text-secondary: #7aa87a;
+  --text-tertiary: #4a6a4a;
+  --text-heading: #00ff41;
+  --accent-info: #00d4ff;
+  --accent-warn: #ffaa00;
+  --accent-error: #ff0040;
+  --accent-success: #00ff41;
+  --shadow-card: 0 10px 60px rgba(0, 0, 0, 0.8), inset 0 0 80px rgba(0, 255, 65, 0.03);
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Cairo', sans-serif;
+  --font-body: 'Cairo', sans-serif;
+  --radius: 10px;
+  --radius-sm: 6px;
+  --radius-lg: 16px;
+  --transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ============================================================
+   الوضع النهاري — أبيض + أزرق داكن
+   ============================================================ */
+body.light-mode {
+  --matrix: #1e40af;
+  --matrix-dim: #1e3a8a;
+  --matrix-dark: #172554;
+  --matrix-glow: rgba(30, 64, 175, 0.25);
+  --matrix-soft: rgba(30, 64, 175, 0.08);
+  --bg-primary: #f5f7fa;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eef2f7;
+  --bg-card: #ffffff;
+  --bg-input: #f9fafb;
+  --bg-overlay: #ffffff;
+  --border-primary: #cbd5e1;
+  --border-strong: #1e40af;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+  --text-heading: #1e40af;
+  --accent-info: #0284c7;
+  --accent-warn: #d97706;
+  --accent-error: #dc2626;
+  --accent-success: #059669;
+  --shadow-card: 0 8px 40px rgba(15, 23, 42, 0.08), 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
+html, body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  position: relative;
+  transition: background 0.4s ease, color 0.4s ease;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   Matrix Canvas
+   ============================================================ */
+#matrixCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+body.light-mode #matrixCanvas { opacity: 0; }
+
+.grid-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 255, 65, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.04) 1px, transparent 1px);
+  background-size: 45px 45px;
+  animation: gridScroll 25s linear infinite;
+  transition: opacity 0.4s ease;
+}
+
+body.light-mode .grid-bg { opacity: 0; }
+
+@keyframes gridScroll {
+  0% { background-position: 0 0; }
+  100% { background-position: 45px 45px; }
+}
+
+.scanline {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.15),
+    rgba(0, 0, 0, 0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  opacity: 0.5;
+  animation: scanMove 8s linear infinite;
+  transition: opacity 0.4s ease;
+}
+
+body.light-mode .scanline { opacity: 0; }
+
+@keyframes scanMove {
+  from { background-position: 0 0; }
+  to { background-position: 0 100vh; }
+}
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0, 0, 0, 0.5) 100%);
+  transition: opacity 0.4s ease;
+}
+
+body.light-mode .vignette { opacity: 0; }
+
+/* ============================================================
+   الشريط العلوي
+   ============================================================ */
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: rgba(0, 8, 0, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-primary);
+  transition: var(--transition);
+}
+
+body.light-mode .top-bar {
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+}
+
+.top-left, .top-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text-heading);
+  text-shadow: 0 0 15px var(--matrix-glow);
+}
+
+body.light-mode .brand { text-shadow: none; }
+
+.brand-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  filter: drop-shadow(0 0 8px var(--matrix-glow));
+}
+
+body.light-mode .brand-icon { filter: none; }
+
+.server-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  padding: 6px 14px;
+  border: 1px solid var(--border-primary);
+  border-radius: 20px;
+  background: rgba(0, 20, 0, 0.4);
+  direction: ltr;
+}
+
+body.light-mode .server-status {
+  background: rgba(240, 244, 250, 0.9);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-warn);
+  box-shadow: 0 0 10px currentColor;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+.status-dot.online { background: var(--accent-success); }
+.status-dot.offline { background: var(--accent-error); }
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.icon-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-heading);
+  cursor: pointer;
+  font-size: 16px;
+  transition: var(--transition);
+  position: relative;
+}
+
+.icon-btn:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 20px var(--matrix-glow);
+  transform: translateY(-2px);
+}
+
+.icon-btn.whatsapp:hover {
+  border-color: #25d366;
+  box-shadow: 0 0 20px rgba(37, 211, 102, 0.5);
+  color: #25d366;
+}
+
+.lang-toggle {
+  display: flex;
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: rgba(0, 20, 0, 0.4);
+}
+
+body.light-mode .lang-toggle {
+  background: rgba(240, 244, 250, 0.9);
+}
+
+.lang-btn {
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.lang-btn.active {
+  background: var(--matrix);
+  color: #fff;
+}
+
+/* ============================================================
+   الحاوية
+   ============================================================ */
+.container {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  min-height: 100vh;
+  padding: 85px 40px 105px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.content-wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ============================================================
+   الشاشات
+   ============================================================ */
+.screen {
+  display: none;
+  width: 100%;
+  animation: screenIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.screen.active { display: block; }
+
+@keyframes screenIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   العنوان الرئيسي
+   ============================================================ */
+.glitch-title {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(32px, 5vw, 58px);
+  font-weight: 900;
+  color: var(--text-heading);
+  text-align: center;
+  position: relative;
+  letter-spacing: 2px;
+  text-shadow: 0 0 20px var(--matrix-glow), 0 0 40px var(--matrix-glow);
+  margin-bottom: 20px;
+  transition: var(--transition);
+}
+
+body.light-mode .glitch-title {
+  text-shadow: none;
+  letter-spacing: 1px;
+}
+
+.glitch-title::before,
+.glitch-title::after {
+  content: attr(data-text);
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.glitch-title::before {
+  color: #00d4ff;
+  animation: glitch1 4s infinite;
+  clip-path: polygon(0 0, 100% 0, 100% 40%, 0 40%);
+}
+
+.glitch-title::after {
+  color: #ff0040;
+  animation: glitch2 4s infinite;
+  clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+}
+
+body.light-mode .glitch-title::before,
+body.light-mode .glitch-title::after { display: none; }
+
+@keyframes glitch1 {
+  0%, 88%, 100% { transform: translate(0); opacity: 0; }
+  90% { transform: translate(-4px, 2px); opacity: 1; }
+  92% { transform: translate(4px, -2px); opacity: 1; }
+  94% { transform: translate(-3px, -1px); opacity: 1; }
+  96% { transform: translate(2px, 2px); opacity: 0; }
+}
+
+@keyframes glitch2 {
+  0%, 88%, 100% { transform: translate(0); opacity: 0; }
+  91% { transform: translate(4px, -2px); opacity: 1; }
+  93% { transform: translate(-4px, 2px); opacity: 1; }
+  95% { transform: translate(3px, 1px); opacity: 1; }
+  97% { transform: translate(-2px, -2px); opacity: 0; }
+}
+
+/* ============================================================
+   شعار ASCII
+   ============================================================ */
+.ascii-logo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(5px, 1.1vw, 11px);
+  line-height: 1.05;
+  color: var(--matrix);
+  white-space: pre;
+  text-align: center;
+  margin: 0 auto 30px;
+  text-shadow: 0 0 8px var(--matrix-glow);
+  direction: ltr;
+  animation: logoGlow 3s ease-in-out infinite;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+
+body.light-mode .ascii-logo {
+  text-shadow: none;
+  color: var(--matrix-dim);
+  animation: none;
+}
+
+@keyframes logoGlow {
+  0%, 100% { text-shadow: 0 0 8px var(--matrix-glow); }
+  50% { text-shadow: 0 0 20px var(--matrix), 0 0 40px var(--matrix-glow); }
+}
+
+.tagline {
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+/* ============================================================
+   الأزرار الرئيسية (Hero Cards)
+   ============================================================ */
+.hero-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 25px;
+  margin: 40px auto;
+  max-width: 900px;
+}
+
+.hero-card {
+  padding: 35px 30px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+.hero-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 40px var(--matrix-glow), var(--shadow-card);
+  transform: translateY(-6px);
+}
+
+.hero-card .icon-big {
+  font-size: 52px;
+  margin-bottom: 20px;
+  filter: drop-shadow(0 0 12px var(--matrix-glow));
+  display: block;
+}
+
+body.light-mode .hero-card .icon-big { filter: none; }
+
+.hero-card .title {
+  font-family: 'Cairo', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 10px;
+}
+
+body.light-mode .hero-card .title { text-shadow: none; }
+
+.hero-card .desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.hero-card .badge {
+  display: inline-block;
+  margin-top: 15px;
+  padding: 5px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--matrix);
+  border: 1px solid var(--matrix);
+  border-radius: 20px;
+  direction: ltr;
+}
+
+/* ============================================================
+   الكروت والطرفية
+   ============================================================ */
+.card, .terminal {
+  background: var(--bg-card);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  margin-bottom: 25px;
+  overflow: hidden;
+  backdrop-filter: blur(20px);
+}
+
+.terminal-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 22px;
+  background: rgba(0, 15, 0, 0.9);
+  border-bottom: 1px solid var(--border-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--text-secondary);
+  direction: ltr;
+}
+
+body.light-mode .terminal-header {
+  background: var(--bg-tertiary);
+}
+
+.terminal-dots { display: flex; gap: 7px; }
+
+.terminal-dots span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: block;
+}
+
+.terminal-dots .red { background: #ff5f57; }
+.terminal-dots .yellow { background: #febc2e; }
+.terminal-dots .green { background: #28c840; }
+
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  opacity: 0.75;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.terminal-body { padding: 35px 40px; }
+.card-body { padding: 40px 45px; }
+
+/* ============================================================
+   عنوان الشاشة
+   ============================================================ */
+.screen-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 25px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border-primary);
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+}
+
+.screen-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--matrix);
+  padding: 4px 12px;
+  border: 1px solid var(--matrix);
+  border-radius: 4px;
+  direction: ltr;
+  background: var(--matrix-soft);
+}
+
+.screen-title {
+  font-family: 'Cairo', sans-serif;
+  font-size: clamp(20px, 3vw, 26px);
+  font-weight: 800;
+  color: var(--text-heading);
+}
+
+/* ============================================================
+   شريط الخطوات
+   ============================================================ */
+.steps-bar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 35px;
+}
+
+.step-item {
+  padding: 14px 10px;
+  text-align: center;
+  background: rgba(0, 20, 0, 0.5);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: var(--transition);
+  position: relative;
+}
+
+body.light-mode .step-item { background: var(--bg-tertiary); }
+
+.step-item.active {
+  color: var(--matrix);
+  border-color: var(--matrix);
+  background: var(--matrix-soft);
+  box-shadow: 0 0 20px var(--matrix-glow);
+}
+
+.step-item.done {
+  color: var(--matrix);
+  border-color: var(--matrix);
+  background: rgba(0, 255, 65, 0.15);
+}
+
+.step-item.done::after {
+  content: '✓';
+  position: absolute;
+  top: -10px;
+  left: 8px;
+  width: 20px;
+  height: 20px;
+  background: var(--matrix);
+  color: #fff;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ============================================================
+   المدخلات
+   ============================================================ */
+.input-group { margin-bottom: 24px; }
+
+.input-group label {
+  display: block;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin-bottom: 10px;
+}
+
+.input-group small {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+textarea,
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"] {
+  width: 100%;
+  padding: 15px 18px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  color: var(--text-heading);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  transition: var(--transition);
+  direction: ltr;
+  text-align: left;
+}
+
+body.light-mode textarea,
+body.light-mode input {
+  color: var(--text-primary);
+}
+
+textarea:focus,
+input:focus {
+  outline: none;
+  border-color: var(--matrix);
+  box-shadow: 0 0 0 3px var(--matrix-soft), 0 0 20px var(--matrix-glow);
+}
+
+textarea {
+  min-height: 220px;
+  resize: vertical;
+  line-height: 1.8;
+}
+
+textarea::placeholder,
+input::placeholder {
+  color: var(--text-tertiary);
+  opacity: 0.7;
+}
+
+/* ============================================================
+   الأزرار
+   ============================================================ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 30px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-heading);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--matrix-soft), transparent);
+  transition: right 0.6s;
+}
+
+.btn:hover::before { right: 100%; }
+
+.btn:hover {
+  border-color: var(--matrix);
+  box-shadow: 0 0 25px var(--matrix-glow);
+  transform: translateY(-2px);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary {
+  background: var(--matrix-soft);
+  border-color: var(--matrix);
+  color: var(--matrix);
+}
+
+.btn-secondary {
+  color: var(--text-secondary);
+  border-color: var(--text-tertiary);
+}
+
+.btn-secondary:hover {
+  color: var(--text-primary);
+  border-color: var(--text-secondary);
+}
+
+.btn-success {
+  background: rgba(0, 255, 65, 0.15);
+  border-color: var(--matrix);
+  color: var(--matrix);
+}
+
+.btn-danger {
+  background: rgba(255, 0, 64, 0.1);
+  border-color: var(--accent-error);
+  color: var(--accent-error);
+}
+
+.btn-small { padding: 10px 18px; font-size: 13px; }
+
+.btn-row {
+  display: flex;
+  gap: 15px;
+  margin-top: 30px;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.btn-row .btn { flex: 1; min-width: 140px; }
+
+.btn-tools {
+  display: flex;
+  gap: 12px;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.btn-tools .btn { flex: 1; min-width: 120px; }
+
+.btn-hero {
+  padding: 18px 45px;
+  font-size: 18px;
+  font-weight: 800;
+  background: transparent;
+  border: 2px solid var(--matrix);
+  color: var(--matrix);
+}
+
+.btn-hero:hover {
+  background: var(--matrix-soft);
+  box-shadow: 0 0 40px var(--matrix-glow);
+}
+
+/* ============================================================
+   صناديق التنبيه
+   ============================================================ */
+.info-box, .warning-box, .error-box, .success-box {
+  padding: 15px 20px;
+  border-radius: var(--radius-sm);
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  margin: 15px 0;
+  border-right: 4px solid;
+  line-height: 1.7;
+  text-align: right;
+}
+
+.info-box {
+  background: rgba(0, 212, 255, 0.08);
+  border-color: var(--accent-info);
+  color: var(--accent-info);
+}
+
+.warning-box {
+  background: rgba(255, 170, 0, 0.08);
+  border-color: var(--accent-warn);
+  color: var(--accent-warn);
+}
+
+.error-box {
+  background: rgba(255, 0, 64, 0.08);
+  border-color: var(--accent-error);
+  color: var(--accent-error);
+}
+
+.success-box {
+  background: rgba(0, 255, 65, 0.08);
+  border-color: var(--accent-success);
+  color: var(--accent-success);
+}
+  /* ============================================================
+   صناديق الخيارات (Checkboxes)
+   ============================================================ */
+.option-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  background: rgba(0, 20, 0, 0.4);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+
+body.light-mode .option-card { background: var(--bg-input); }
+
+.option-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 3px;
+  height: 100%;
+  background: var(--matrix);
+  transform: scaleY(0);
+  transform-origin: top;
+  transition: transform 0.3s;
+}
+
+.option-card:hover {
+  background: rgba(0, 255, 65, 0.04);
+  border-color: var(--border-strong);
+}
+
+.option-card:hover::before { transform: scaleY(1); }
+
+.option-card.selected {
+  background: var(--matrix-soft);
+  border-color: var(--matrix);
+  box-shadow: 0 0 20px var(--matrix-glow);
+}
+
+.option-card.selected::before { transform: scaleY(1); }
+
+.option-card input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--matrix);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.option-card .icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.option-card .label { flex: 1; text-align: right; }
+
+.option-card .label strong {
+  display: block;
+  font-family: 'Cairo', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 3px;
+}
+
+.option-card .label small {
+  display: block;
+  font-family: 'Cairo', sans-serif;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  text-align: right;
+}
+
+/* ============================================================
+   نظام الباسورد
+   ============================================================ */
+.password-system {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.system-card {
+  padding: 22px 18px;
+  background: rgba(0, 20, 0, 0.4);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition);
+  position: relative;
+}
+
+body.light-mode .system-card { background: var(--bg-input); }
+
+.system-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-3px);
+  box-shadow: 0 10px 25px var(--matrix-soft);
+}
+
+.system-card.selected {
+  border-color: var(--matrix);
+  background: var(--matrix-soft);
+  box-shadow: 0 0 25px var(--matrix-glow);
+}
+
+.system-card.selected::after {
+  content: '✓';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 24px;
+  height: 24px;
+  background: var(--matrix);
+  color: #fff;
+  border-radius: 50%;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.system-prefix {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--matrix);
+  margin-bottom: 8px;
+  direction: ltr;
+}
+
+.system-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.system-example {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--matrix-dim);
+  direction: ltr;
+}
+
+/* ============================================================
+   معاينة الباسوردات
+   ============================================================ */
+.pw-preview-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 11px 16px;
+  background: rgba(0, 20, 0, 0.5);
+  border-right: 3px solid var(--matrix);
+  border-radius: 4px;
+  margin-bottom: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  direction: ltr;
+}
+
+body.light-mode .pw-preview-item { background: var(--bg-tertiary); }
+
+.pw-preview-item .pw-email {
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+  font-size: 11px;
+}
+
+.pw-preview-item .pw-value {
+  color: var(--matrix);
+  font-weight: 700;
+}
+
+/* ============================================================
+   شريط التقدم
+   ============================================================ */
+.progress-container { margin: 25px 0; }
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--border-primary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+body.light-mode .progress-bar { background: var(--bg-tertiary); }
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--matrix), #00d4ff, var(--matrix));
+  background-size: 200% 100%;
+  width: 0%;
+  transition: width 0.5s ease;
+  animation: progressShine 3s linear infinite;
+  box-shadow: 0 0 15px var(--matrix-glow);
+}
+
+@keyframes progressShine {
+  from { background-position: 0% 0; }
+  to { background-position: 200% 0; }
+}
+
+/* ============================================================
+   الإحصائيات
+   ============================================================ */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 15px;
+  margin: 25px 0;
+}
+
+.stat-card {
+  padding: 20px;
+  background: rgba(0, 20, 0, 0.4);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+  text-align: center;
+  transition: var(--transition);
+}
+
+body.light-mode .stat-card { background: var(--bg-input); }
+
+.stat-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 0 20px var(--matrix-soft);
+}
+
+.stat-value {
+  font-family: 'Cairo', sans-serif;
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--matrix);
+  line-height: 1;
+  margin-bottom: 6px;
+  direction: ltr;
+}
+
+.stat-value.green { color: var(--accent-success); }
+.stat-value.red { color: var(--accent-error); }
+.stat-value.yellow { color: var(--accent-warn); }
+
+.stat-label {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   صندوق السجل
+   ============================================================ */
+.log-box {
+  background: rgba(0, 5, 0, 0.95);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+  padding: 18px 22px;
+  height: 380px;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.9;
+  direction: ltr;
+  text-align: left;
+  margin-top: 20px;
+}
+
+body.light-mode .log-box { background: var(--bg-tertiary); }
+
+.log-box::-webkit-scrollbar { width: 8px; }
+.log-box::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); }
+.log-box::-webkit-scrollbar-thumb {
+  background: var(--matrix);
+  border-radius: 4px;
+}
+
+.log-line {
+  padding: 3px 0;
+  display: flex;
+  gap: 12px;
+  animation: logIn 0.3s ease;
+}
+
+@keyframes logIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.log-time {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+.log-msg { flex: 1; }
+.log-line.info .log-msg { color: var(--accent-info); }
+.log-line.success .log-msg { color: var(--accent-success); }
+.log-line.error .log-msg { color: var(--accent-error); }
+.log-line.warn .log-msg { color: var(--accent-warn); }
+
+.log-line::before {
+  content: '>';
+  color: var(--matrix);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   التذييل (Footer)
+   ============================================================ */
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  min-height: 52px;
+  padding: 8px 24px;
+  background: rgba(0, 8, 0, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+body.light-mode .footer {
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -2px 12px rgba(15, 23, 42, 0.06);
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-heading);
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.footer-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.footer-btn {
+  padding: 6px 14px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  border-radius: 4px;
+}
+
+.footer-btn:hover {
+  color: var(--matrix);
+  background: var(--matrix-soft);
+}
+
+.footer-right {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+/* ============================================================
+   خطط الاشتراك
+   ============================================================ */
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin: 25px 0;
+}
+
+.package-card {
+  padding: 25px 20px;
+  background: rgba(0, 20, 0, 0.5);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius);
+  text-align: center;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+body.light-mode .package-card { background: var(--bg-input); }
+
+.package-card.featured {
+  border-color: var(--matrix);
+  box-shadow: 0 0 30px var(--matrix-glow);
+  background: var(--matrix-soft);
+}
+
+.package-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px var(--matrix-soft);
+}
+
+.package-card .pkg-name {
+  font-family: 'Cairo', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 10px;
+}
+
+.package-card .pkg-price {
+  font-family: 'Cairo', sans-serif;
+  font-size: 38px;
+  font-weight: 900;
+  color: var(--matrix);
+  line-height: 1;
+  margin: 12px 0;
+  direction: ltr;
+}
+
+.package-card .pkg-price small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+}
+
+.package-card .pkg-duration {
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 15px;
+}
+
+.package-card .pkg-features {
+  list-style: none;
+  padding: 15px 0;
+  margin: 15px 0;
+  border-top: 1px solid var(--border-primary);
+  border-bottom: 1px solid var(--border-primary);
+  text-align: right;
+}
+
+.package-card .pkg-features li {
+  padding: 6px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.package-card .pkg-features li::before {
+  content: '✓ ';
+  color: var(--matrix);
+  font-weight: 900;
+}
+
+.package-card .pkg-cta {
+  width: 100%;
+  padding: 12px;
+  background: var(--matrix-soft);
+  border: 1px solid var(--matrix);
+  color: var(--matrix);
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.package-card .pkg-cta:hover {
+  background: var(--matrix);
+  color: #fff;
+  box-shadow: 0 0 20px var(--matrix-glow);
+}
+
+/* ============================================================
+   قائمة التحذيرات
+   ============================================================ */
+.warning-list {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.warning-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  padding: 16px 20px;
+  background: rgba(255, 170, 0, 0.05);
+  border-right: 4px solid var(--accent-warn);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: right;
+}
+
+.warning-item .warn-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.warning-item strong {
+  color: var(--accent-warn);
+  display: block;
+  margin-bottom: 4px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.agree-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  background: var(--matrix-soft);
+  border: 1px solid var(--matrix);
+  border-radius: var(--radius);
+  margin: 25px 0;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.agree-checkbox:hover { box-shadow: 0 0 25px var(--matrix-glow); }
+
+.agree-checkbox input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--matrix);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.agree-checkbox label {
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   شاشة الدخول
+   ============================================================ */
+.login-form {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-header .lock-icon {
+  font-size: 56px;
+  margin-bottom: 15px;
+  display: block;
+}
+
+.login-header h3 {
+  font-family: 'Cairo', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-heading);
+  margin-bottom: 8px;
+}
+
+.login-header p {
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+   النوافذ المنبثقة (Modals)
+   ============================================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.9);
+  backdrop-filter: blur(10px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-overlay.active { display: flex; animation: fadeIn 0.3s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--matrix);
+  border-radius: var(--radius-lg);
+  max-width: 800px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 40px 45px;
+  box-shadow: 0 0 60px var(--matrix-glow);
+  animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  direction: rtl;
+}
+
+body.light-mode .modal {
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal::-webkit-scrollbar { width: 8px; }
+.modal::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+.modal::-webkit-scrollbar-thumb {
+  background: var(--matrix);
+  border-radius: 4px;
+}
+
+.modal h3 {
+  font-family: 'Cairo', sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--matrix);
+  margin-bottom: 20px;
+  text-align: right;
+}
+
+.modal h4 {
+  font-family: 'Cairo', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-heading);
+  margin: 25px 0 12px;
+}
+
+.modal p {
+  font-size: 15px;
+  line-height: 1.9;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  text-align: right;
+}
+
+.modal ul {
+  list-style: none;
+  padding: 0;
+  margin: 15px 0;
+}
+
+.modal li {
+  padding: 8px 30px 8px 0;
+  position: relative;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.modal li::before {
+  content: '▸';
+  position: absolute;
+  right: 10px;
+  color: var(--matrix);
+  font-weight: 900;
+}
+
+.modal .contact-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 20px;
+  background: var(--matrix-soft);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+  direction: rtl;
+  text-align: right;
+}
+
+.modal .contact-item .icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.modal .contact-item .text {
+  color: var(--matrix);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.modal-close {
+  display: block;
+  margin: 30px auto 0;
+  padding: 14px 45px;
+  background: var(--matrix-soft);
+  border: 1px solid var(--matrix);
+  color: var(--matrix);
+  font-family: 'Cairo', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: var(--transition);
+}
+
+.modal-close:hover {
+  background: var(--matrix);
+  color: #fff;
+  box-shadow: 0 0 25px var(--matrix-glow);
+}
+
+/* ============================================================
+   شارة التجربة المجانية
+   ============================================================ */
+.trial-badge {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 90;
+  padding: 10px 18px;
+  background: rgba(255, 170, 0, 0.15);
+  border: 1px solid var(--accent-warn);
+  border-radius: 20px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-warn);
+  display: none;
+}
+
+.trial-badge.active {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  animation: trialPulse 2s infinite;
+}
+
+@keyframes trialPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(255, 170, 0, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(255, 170, 0, 0.6); }
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 1024px) {
+  .container { padding: 75px 20px 100px; }
+  .card-body, .terminal-body { padding: 30px 25px; }
+  .ascii-logo { font-size: 5px; }
+}
+
+@media (max-width: 768px) {
+  body { font-size: 14px; }
+  .top-bar { padding: 0 12px; gap: 8px; }
+  .brand { font-size: 15px; }
+  .brand-icon { width: 26px; height: 26px; font-size: 18px; }
+  .server-status { font-size: 10px; padding: 5px 10px; }
+  .server-status span:last-child { display: none; }
+  .icon-btn { width: 34px; height: 34px; font-size: 14px; }
+  .lang-btn { padding: 6px 10px; font-size: 12px; }
+  .glitch-title { letter-spacing: 1px; margin-bottom: 15px; }
+  .ascii-logo { font-size: 3.2px; }
+  .container { padding: 70px 12px 100px; }
+  .card-body, .terminal-body { padding: 22px 18px; }
+  .steps-bar { gap: 4px; }
+  .step-item { padding: 8px 4px; font-size: 10px; }
+  .step-item.done::after { width: 16px; height: 16px; font-size: 9px; top: -6px; left: 2px; }
+  .btn { padding: 12px 20px; font-size: 14px; }
+  .btn-row .btn { flex: 1; min-width: 100%; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .stat-value { font-size: 26px; }
+  .stat-label { font-size: 11px; }
+  .hero-cards { grid-template-columns: 1fr; gap: 15px; }
+  .hero-card { padding: 25px 20px; }
+  .hero-card .icon-big { font-size: 40px; }
+  .hero-card .title { font-size: 19px; }
+  .password-system { grid-template-columns: 1fr; }
+  .footer { font-size: 11px; padding: 8px 10px; }
+  .footer-left { display: none; }
+  .footer-right { display: none; }
+  .modal { padding: 25px 18px; }
+  .modal h3 { font-size: 20px; }
+  .packages-grid { grid-template-columns: 1fr; }
+  .log-box { height: 300px; font-size: 11px; padding: 14px; }
+  .pw-preview-item .pw-email { max-width: 130px; }
+  .trial-badge { top: 70px; right: 10px; font-size: 11px; padding: 7px 12px; }
+}
+
+@media (max-width: 400px) {
+  .glitch-title { font-size: 24px; }
+  .ascii-logo { display: none; }
+  .screen-title { font-size: 18px; }
+  .stat-value { font-size: 22px; }
+}
+
+/* ============================================================
+   Particles
+   ============================================================ */
+.particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 4;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--matrix);
+  opacity: 0;
+  user-select: none;
+}
+
+body.light-mode .particle { display: none; }
+
+/* ============================================================
+   Loader
+   ============================================================ */
+.loader {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--matrix-soft);
+  border-top-color: var(--matrix);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   Scrollbar
+   ============================================================ */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg-secondary); }
+::-webkit-scrollbar-thumb {
+  background: var(--matrix-dim);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--matrix); }
+
+::selection {
+  background: var(--matrix);
+  color: #fff;
+}
+
+.hidden { display: none !important; }
+</style>
+</head>
+  <body>
+
+<canvas id="matrixCanvas"></canvas>
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+<div class="vignette"></div>
+
+<!-- شارة التجربة المجانية -->
+<div class="trial-badge" id="trialBadge">
+  <span>⚡</span>
+  <span id="trialText">التجربة المجانية: 5 حسابات متبقية</span>
+</div>
+
+<!-- الشريط العلوي -->
+<div class="top-bar">
+  <div class="top-left">
+    <div class="brand">
+      <span class="brand-icon">◈</span>
+      <span>شادو روتيت</span>
+    </div>
+  </div>
+  <div class="top-center">
+    <div class="server-status">
+      <span class="status-dot" id="serverDot"></span>
+      <span id="serverText">جارٍ الاتصال...</span>
+    </div>
+  </div>
+  <div class="top-right">
+    <button class="icon-btn whatsapp" onclick="openWhatsApp()" title="واتساب">
+      <span>💬</span>
+    </button>
+    <div class="lang-toggle">
+      <button class="lang-btn active" id="langAr" onclick="setLanguage('ar')">ع</button>
+      <button class="lang-btn" id="langEn" onclick="setLanguage('en')">EN</button>
+    </div>
+    <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="تبديل الوضع">
+      <span id="themeIcon">☾</span>
+    </button>
+  </div>
+</div>
+
+<!-- الحاوية -->
+<div class="container">
+  <div class="content-wrap">
+
+    <!-- ============================================================
+         الشاشة 1: الترحيب
+         ============================================================ -->
+    <div class="screen active" id="screen-welcome">
+      <div class="ascii-logo">
+   ███████╗██╗  ██╗ █████╗ ██████╗  ██████╗ ██╗    ██╗
+   ██╔════╝██║  ██║██╔══██╗██╔══██╗██╔═══██╗██║    ██║
+   ███████╗███████║███████║██║  ██║██║   ██║██║ █╗ ██║
+   ╚════██║██╔══██║██╔══██║██║  ██║██║   ██║██║███╗██║
+   ███████║██║  ██║██║  ██║██████╔╝╚██████╔╝╚███╔███╔╝
+   ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝  ╚═════╝  ╚══╝╚══╝
+      </div>
+
+      <h1 class="glitch-title" data-text="شادو روتيت">شادو روتيت</h1>
+      <p class="tagline">نظام إدارة الحسابات الاحترافي</p>
+      <p class="tagline">الإصدار 3.0 — النسخة الاحترافية</p>
+
+      <div class="hero-cards">
+        <div class="hero-card" onclick="startFreeTrial()">
+          <span class="icon-big">⚡</span>
+          <div class="title">تجربة مجانية</div>
+          <p class="desc">جرّب النظام على 5 حسابات مجاناً، بدون الحاجة لتفعيل أو تسجيل.</p>
+          <span class="badge">5 حسابات</span>
+        </div>
+
+        <div class="hero-card" onclick="goTo('screen-login')">
+          <span class="icon-big">🔐</span>
+          <div class="title">النسخة المدفوعة</div>
+          <p class="desc">الوصول الكامل لكل المميزات، سرعة مضاعفة، بدون قيود على عدد الحسابات.</p>
+          <span class="badge">بدون حدود</span>
+        </div>
+      </div>
+
+      <div class="btn-row" style="justify-content:center;margin-top:30px;">
+        <button class="btn btn-hero" onclick="goTo('screen-accounts')">إبدأ الآن ←</button>
+      </div>
+
+      <div class="info-box" style="margin-top:40px;max-width:800px;margin-left:auto;margin-right:auto;text-align:center;">
+        النظام جاهز. اختر خياراً من الأعلى للبدء.
+      </div>
+    </div>
+
+    <!-- ============================================================
+         الشاشة 2: تسجيل الدخول
+         ============================================================ -->
+    <div class="screen" id="screen-login">
+      <div class="screen-header">
+        <span class="screen-num">[دخول]</span>
+        <span class="screen-title">تسجيل الدخول — النسخة المدفوعة</span>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <div class="login-form">
+            <div class="login-header">
+              <span class="lock-icon">🔐</span>
+              <h3>الدخول للنسخة الاحترافية</h3>
+              <p>أدخل بيانات الاعتماد الخاصة بك</p>
+            </div>
+
+            <div class="input-group">
+              <label>البريد الإلكتروني</label>
+              <input type="email" id="loginEmail" placeholder="username@gmail.com" autocomplete="off">
+            </div>
+
+            <div class="input-group">
+              <label>كلمة المرور</label>
+              <input type="password" id="loginPassword" placeholder="•••••••••••••••••••••••••" autocomplete="off">
+            </div>
+
+            <div id="loginMessage"></div>
+
+            <div class="btn-row" style="margin-top:25px;">
+              <button class="btn btn-secondary" onclick="goTo('screen-welcome')">← رجوع</button>
+              <button class="btn btn-primary" onclick="attemptLogin()" id="loginBtn">دخول ←</button>
+            </div>
+
+            <div class="info-box" style="margin-top:25px;text-align:center;">
+              مش عندك حساب؟ تواصل معنا على واتساب للاشتراك في خطة.
+              <br><br>
+              <button class="btn btn-secondary btn-small" onclick="openWhatsApp()">
+                💬 تواصل عبر واتساب
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen-header" style="margin-top:40px;">
+        <span class="screen-num">[خطط]</span>
+        <span class="screen-title">خطط الاشتراك المتاحة</span>
+      </div>
+
+      <div class="packages-grid">
+        <div class="package-card">
+          <div class="pkg-name">يومي</div>
+          <div class="pkg-price">$3<small>/يوم</small></div>
+          <div class="pkg-duration">24 ساعة وصول</div>
+          <ul class="pkg-features">
+            <li>حسابات غير محدودة</li>
+            <li>كل العمليات</li>
+            <li>تصدير Excel</li>
+          </ul>
+          <button class="pkg-cta" onclick="openWhatsApp('daily')">اشترك الآن</button>
+        </div>
+
+        <div class="package-card featured">
+          <div class="pkg-name">أسبوعي</div>
+          <div class="pkg-price">$12<small>/أسبوع</small></div>
+          <div class="pkg-duration">7 أيام وصول</div>
+          <ul class="pkg-features">
+            <li>كل ميزات اليومي</li>
+            <li>دعم ذو أولوية</li>
+            <li>جمع المعلومات</li>
+          </ul>
+          <button class="pkg-cta" onclick="openWhatsApp('weekly')">اشترك الآن</button>
+        </div>
+
+        <div class="package-card">
+          <div class="pkg-name">شهري</div>
+          <div class="pkg-price">$35<small>/شهر</small></div>
+          <div class="pkg-duration">30 يوم وصول</div>
+          <ul class="pkg-features">
+            <li>كل ميزات الأسبوعي</li>
+            <li>سرعة 5× متوازية</li>
+            <li>ميزات متقدمة</li>
+          </ul>
+          <button class="pkg-cta" onclick="openWhatsApp('monthly')">اشترك الآن</button>
+        </div>
+
+        <div class="package-card">
+          <div class="pkg-name">مدى الحياة</div>
+          <div class="pkg-price">$199<small>/مرة</small></div>
+          <div class="pkg-duration">وصول دائم</div>
+          <ul class="pkg-features">
+            <li>كل الميزات</li>
+            <li>تحديثات مجانية</li>
+            <li>دعم VIP</li>
+          </ul>
+          <button class="pkg-cta" onclick="openWhatsApp('lifetime')">اشترك الآن</button>
+        </div>
+      </div>
+
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn btn-secondary" onclick="goTo('screen-welcome')">← العودة للرئيسية</button>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         الشاشة 3: التحذيرات
+         ============================================================ -->
+    <div class="screen" id="screen-warnings">
+      <div class="steps-bar">
+        <div class="step-item active">1 — الدخول</div>
+        <div class="step-item">2 — التحذيرات</div>
+        <div class="step-item">3 — الإدخال</div>
+        <div class="step-item">4 — الخيارات</div>
+        <div class="step-item">5 — التنفيذ</div>
+      </div>
+
+      <div class="screen-header">
+        <span class="screen-num">[!]</span>
+        <span class="screen-title">تحذيرات مهمة — اقرأها بعناية</span>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="red"></span><span class="yellow"></span><span class="green"></span>
+          </div>
+          <div class="terminal-title">warnings.txt</div>
+        </div>
+        <div class="terminal-body">
+
+          <div class="info-box">
+            قبل استخدام النظام، اقرأ التحذيرات التالية بعناية. عدم الالتزام بها قد يؤدي إلى قفل حسابك أو رفض الدخول.
+          </div>
+
+          <ul class="warning-list">
+            <li class="warning-item">
+              <span class="warn-icon">⚠️</span>
+              <div>
+                <strong>لا تسجل الدخول من جهاز آخر</strong>
+                <span>لا تحاول تسجيل الدخول من جهاز آخر بنفس بيانات الاعتماد. النظام يرصد الجهاز الأول وقد يرفض الدخول من جهاز جديد.</span>
+              </div>
+            </li>
+
+            <li class="warning-item">
+              <span class="warn-icon">⚠️</span>
+              <div>
+                <strong>تجنب استخدام VPN أو Proxy</strong>
+                <span>تجنب تسجيل الدخول عبر VPN أو Proxy. قد يؤدي ذلك إلى تعطيل بصمة الجهاز ورفض الدخول.</span>
+              </div>
+            </li>
+
+            <li class="warning-item">
+              <span class="warn-icon">⚠️</span>
+              <div>
+                <strong>لا تستخدم المتصفح المخفي</strong>
+                <span>لا تستخدم المتصفح المخفي (Incognito) للدخول، لأن ذلك يفقد بيانات الجلسة وقد يسبب مشاكل في التفعيل.</span>
+              </div>
+            </li>
+
+            <li class="warning-item">
+              <span class="warn-icon">⚠️</span>
+              <div>
+                <strong>جهاز واحد لكل ترخيص</strong>
+                <span>كل ترخيص صالح لجهاز واحد فقط. المشاركة مع أجهزة أخرى تؤدي إلى إلغاء الترخيص تلقائياً.</span>
+              </div>
+            </li>
+
+            <li class="warning-item">
+              <span class="warn-icon">⚠️</span>
+              <div>
+                <strong>لا تغلق المتصفح أثناء العمل</strong>
+                <span>لا تغلق نافذة المتصفح أثناء عمل النظام. سيتوقف التنفيذ وقد تفقد البيانات الحالية.</span>
+              </div>
+            </li>
+
+            <li class="warning-item">
+              <span class="warn-icon">⚠️</span>
+              <div>
+                <strong>استخدمه بمسؤولية</strong>
+                <span>استخدم النظام فقط على الحسابات التي تملكها بشكل قانوني. أنت المسؤول الكامل عن أي استخدام غير قانوني.</span>
+              </div>
+            </li>
+          </ul>
+
+          <div class="agree-checkbox" id="agreeBox" onclick="toggleAgree()">
+            <input type="checkbox" id="agreeCheckbox">
+            <label for="agreeCheckbox">أوافق على كل التحذيرات وأتحمل المسؤولية الكاملة</label>
+          </div>
+
+          <div class="btn-row" style="margin-top:25px;">
+            <button class="btn btn-secondary" onclick="goTo('screen-login')">← رجوع</button>
+            <button class="btn btn-primary" id="warnContinueBtn" onclick="continueFromWarnings()" disabled>
+              أوافق — متابعة ←
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         الشاشة 4: الحسابات
+         ============================================================ -->
+    <div class="screen" id="screen-accounts">
+      <div class="steps-bar">
+        <div class="step-item done">1 — الدخول</div>
+        <div class="step-item done">2 — التحذيرات</div>
+        <div class="step-item active">3 — الإدخال</div>
+        <div class="step-item">4 — الخيارات</div>
+        <div class="step-item">5 — التنفيذ</div>
+      </div>
+
+      <div class="screen-header">
+        <span class="screen-num">[1]</span>
+        <span class="screen-title">إضافة الحسابات</span>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="red"></span><span class="yellow"></span><span class="green"></span>
+          </div>
+          <div class="terminal-title">accounts_input.txt</div>
+        </div>
+        <div class="terminal-body">
+
+          <div class="info-box">
+            كل سطر = حساب واحد. الترتيب: <b>الإيميل، الباسورد، بريد الاسترداد، السنة، TOTP، الرموز الاحتياطية</b> — مفصولة بـ Tab.
+          </div>
+
+          <div class="input-group" style="margin-top:20px;">
+            <label>الصق بيانات الحسابات هنا</label>
+            <textarea id="accountsInput" placeholder="email1@gmail.com	OldPass123	recovery1@gmail.com	2022	a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6	5479 8607 9909 6119
+email2@gmail.com	OldPass456	recovery2@gmail.com	2021	b1c2d3e4f5g6h7i8j9k0l1m2n3o4p5q6	1234 5678 9012 3456"></textarea>
+          </div>
+
+          <div class="btn-tools">
+            <button class="btn btn-secondary btn-small" onclick="loadSample()">تحميل نموذج</button>
+            <button class="btn btn-secondary btn-small" onclick="loadFromFile()">تحميل ملف</button>
+            <button class="btn btn-secondary btn-small" onclick="pasteFromClipboard()">لصق</button>
+            <button class="btn btn-secondary btn-small" onclick="clearAccounts()">تفريغ</button>
+          </div>
+
+          <div id="accountsInfo"></div>
+
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goTo('screen-welcome')">← رجوع</button>
+        <button class="btn btn-primary" onclick="validateAccounts()">التالي ←</button>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         الشاشة 5: الباسورد
+         ============================================================ -->
+    <div class="screen" id="screen-password">
+      <div class="steps-bar">
+        <div class="step-item done">1 — الدخول</div>
+        <div class="step-item done">2 — التحذيرات</div>
+        <div class="step-item done">3 — الإدخال</div>
+        <div class="step-item active">4 — الخيارات</div>
+        <div class="step-item">5 — التنفيذ</div>
+      </div>
+
+      <div class="screen-header">
+        <span class="screen-num">[2]</span>
+        <span class="screen-title">نظام الباسورد الجديد</span>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="red"></span><span class="yellow"></span><span class="green"></span>
+          </div>
+          <div class="terminal-title">password_config</div>
+        </div>
+        <div class="terminal-body">
+
+          <div class="info-box">
+            اختر نظام الباسورد — كل حساب سيكون له باسورد مختلف وفريد.
+          </div>
+
+          <div class="password-system" style="margin-top:20px;">
+            <div class="system-card selected" id="sys-ahm" onclick="selectSystem('ahm')">
+              <div class="system-prefix">AHM-</div>
+              <div class="system-desc">بادئة AHM عشوائية</div>
+              <div class="system-example">AHM-xK9mP2qL</div>
+            </div>
+            <div class="system-card" id="sys-rdw" onclick="selectSystem('rdw')">
+              <div class="system-prefix">RDW-</div>
+              <div class="system-desc">بادئة RDW عشوائية</div>
+              <div class="system-example">RDW-xK9mP2qL</div>
+            </div>
+            <div class="system-card" id="sys-custom" onclick="selectSystem('custom')">
+              <div class="system-prefix">مخصص</div>
+              <div class="system-desc">بادئة خاصة بك</div>
+              <div class="system-example">Ahmed-xxx</div>
+            </div>
+          </div>
+
+          <div class="option-card" id="opt-manual" onclick="selectSystem('manual')">
+            <input type="checkbox" id="cb-manual">
+            <span class="icon">✍️</span>
+            <div class="label">
+              <strong>باسورد يدوي ثابت</strong>
+              <small>نفس الباسورد لكل الحسابات</small>
+            </div>
+          </div>
+
+          <div class="input-group" id="manualPwGroup" style="display:none;margin-top:15px;">
+            <label>الباسورد اليدوي</label>
+            <input type="text" id="manualPassword" placeholder="AhmedNaser2026">
+          </div>
+
+          <div class="input-group" id="customPwGroup" style="display:none;margin-top:15px;">
+            <label>البادئة المخصصة</label>
+            <input type="text" id="customPrefix" placeholder="Ahmed-">
+          </div>
+
+          <div class="input-group" id="lengthGroup" style="margin-top:15px;">
+            <label>طول الباسورد (16-32)</label>
+            <input type="number" id="randomLength" value="16" min="16" max="32">
+          </div>
+
+          <div id="pwPreviewBox"></div>
+
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goTo('screen-accounts')">← رجوع</button>
+        <button class="btn btn-primary" onclick="goTo('screen-options')">التالي ←</button>
+      </div>
+    </div>
+
+    <!-- HTML هيستمر في الرد الجاي -->
+
+  </div>
+</div>
+        <!-- ============================================================
+         الشاشة 6: الخيارات
+         ============================================================ -->
+    <div class="screen" id="screen-options">
+      <div class="steps-bar">
+        <div class="step-item done">1 — الدخول</div>
+        <div class="step-item done">2 — التحذيرات</div>
+        <div class="step-item done">3 — الإدخال</div>
+        <div class="step-item active">4 — الخيارات</div>
+        <div class="step-item">5 — التنفيذ</div>
+      </div>
+
+      <div class="screen-header">
+        <span class="screen-num">[3]</span>
+        <span class="screen-title">اختيار العمليات</span>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="red"></span><span class="yellow"></span><span class="green"></span>
+          </div>
+          <div class="terminal-title">operations_config</div>
+        </div>
+        <div class="terminal-body">
+
+          <div class="info-box">
+            استخدم الأزرار السريعة لاختيار العمليات بضغطة واحدة.
+          </div>
+
+          <div class="btn-tools" style="margin:15px 0 25px;">
+            <button class="btn btn-secondary btn-small" onclick="selectAll()">✓ اختيار الكل</button>
+            <button class="btn btn-secondary btn-small" onclick="changeAllData()">🔑 تغيير كل البيانات</button>
+            <button class="btn btn-secondary btn-small" onclick="fetchAllInfo()">📊 جلب كل المعلومات</button>
+            <button class="btn btn-secondary btn-small" onclick="deselectAll()">✗ إلغاء الكل</button>
+          </div>
+
+          <!-- تعديلات الحساب -->
+          <div class="screen-num" style="margin-bottom:15px;display:inline-block;">// تعديلات الحساب</div>
+
+          <div class="option-card selected" id="opt-change-pw" onclick="toggleOption('changePw')">
+            <input type="checkbox" id="cb-changePw" checked>
+            <span class="icon">🔑</span>
+            <div class="label">
+              <strong>تغيير الباسورد</strong>
+              <small>تغيير كلمة المرور للحساب</small>
+            </div>
+          </div>
+
+          <div class="option-card" id="opt-change-recovery" onclick="toggleOption('changeRecovery')">
+            <input type="checkbox" id="cb-changeRecovery">
+            <span class="icon">📧</span>
+            <div class="label">
+              <strong>تغيير بريد الاسترداد</strong>
+              <small>تعديل البريد الاحتياطي</small>
+            </div>
+          </div>
+
+          <div class="option-card" id="opt-change-backup" onclick="toggleOption('changeBackup')">
+            <input type="checkbox" id="cb-changeBackup">
+            <span class="icon">🎟️</span>
+            <div class="label">
+              <strong>توليد رموز احتياطية جديدة</strong>
+              <small>10 رموز جديدة بدل القديمة</small>
+            </div>
+          </div>
+
+          <div class="option-card" id="opt-change-2fa" onclick="toggleOption('change2fa')">
+            <input type="checkbox" id="cb-change2fa">
+            <span class="icon">🛡️</span>
+            <div class="label">
+              <strong>تغيير TOTP (32 حرف)</strong>
+              <small>توليد سر جديد للتحقق بخطوتين</small>
+            </div>
+          </div>
+
+          <div class="option-card" id="opt-signout" onclick="toggleOption('signout')">
+            <input type="checkbox" id="cb-signout">
+            <span class="icon">🚪</span>
+            <div class="label">
+              <strong>تسجيل خروج من كل الأجهزة</strong>
+              <small>طرد جميع الجلسات النشطة</small>
+            </div>
+          </div>
+
+          <div class="option-card" id="opt-remove-phones" onclick="toggleOption('removePhones')">
+            <input type="checkbox" id="cb-removePhones">
+            <span class="icon">📱</span>
+            <div class="label">
+              <strong>حذف أرقام الاسترداد</strong>
+              <small>إزالة أرقام الموبايل من الحساب</small>
+            </div>
+          </div>
+
+          <!-- جمع المعلومات -->
+          <div class="screen-num" style="margin:35px 0 15px;display:inline-block;">// جمع المعلومات</div>
+
+          <div class="option-card" id="opt-gather" onclick="toggleOption('gather')">
+            <input type="checkbox" id="cb-gather">
+            <span class="icon">📊</span>
+            <div class="label">
+              <strong>جمع معلومات الحساب</strong>
+              <small>تفعيل جمع بيانات إضافية</small>
+            </div>
+          </div>
+
+          <div id="gatherSubOptions" style="display:none;padding-right:20px;margin-top:15px;">
+            <div class="option-card" id="opt-gather-youtube" onclick="toggleOption('gatherYoutube')">
+              <input type="checkbox" id="cb-gatherYoutube">
+              <span class="icon">▶️</span>
+              <div class="label">
+                <strong>معلومات يوتيوب</strong>
+                <small>القناة، تاريخ الإنشاء، المشتركين، الفيديوهات، الرابط</small>
+              </div>
+            </div>
+            <div class="option-card" id="opt-gather-maps" onclick="toggleOption('gatherMaps')">
+              <input type="checkbox" id="cb-gatherMaps">
+              <span class="icon">🗺️</span>
+              <div class="label">
+                <strong>معلومات خرائط جوجل</strong>
+                <small>المستوى، النقاط، المراجعات، التعديلات</small>
+              </div>
+            </div>
+            <div class="option-card" id="opt-gather-drive" onclick="toggleOption('gatherDrive')">
+              <input type="checkbox" id="cb-gatherDrive">
+              <span class="icon">☁️</span>
+              <div class="label">
+                <strong>مساحة Drive</strong>
+                <small>المستخدم من إجمالي المساحة</small>
+              </div>
+            </div>
+            <div class="option-card" id="opt-gather-apps" onclick="toggleOption('gatherApps')">
+              <input type="checkbox" id="cb-gatherApps">
+              <span class="icon">🔗</span>
+              <div class="label">
+                <strong>التطبيقات المرتبطة</strong>
+                <small>العدد + الأسماء + كشف فيسبوك</small>
+              </div>
+            </div>
+            <div class="option-card" id="opt-gather-business" onclick="toggleOption('gatherBusiness')">
+              <input type="checkbox" id="cb-gatherBusiness">
+              <span class="icon">💼</span>
+              <div class="label">
+                <strong>نشاط جوجل التجاري</strong>
+                <small>مستخدم / غير مستخدم</small>
+              </div>
+            </div>
+            <div class="option-card" id="opt-gather-country" onclick="toggleOption('gatherCountry')">
+              <input type="checkbox" id="cb-gatherCountry">
+              <span class="icon">🌍</span>
+              <div class="label">
+                <strong>الدولة</strong>
+                <small>بلد الحساب</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- إعدادات الإكسل -->
+          <div class="screen-num" style="margin:35px 0 15px;display:inline-block;">// إعدادات الإكسل</div>
+
+          <div class="option-card" id="opt-coloring" onclick="toggleOption('coloring')">
+            <input type="checkbox" id="cb-coloring">
+            <span class="icon">🎨</span>
+            <div class="label">
+              <strong>تلوين ملف الإكسل</strong>
+              <small>تفعيل تلوين خلايا النتائج حسب الحالة</small>
+            </div>
+          </div>
+
+          <div id="coloringLegend" style="display:none;padding:18px;background:rgba(0,20,0,0.5);border:1px solid var(--border-primary);border-radius:6px;margin-top:12px;font-family:'Cairo',sans-serif;font-size:13px;line-height:2;direction:rtl;text-align:right;">
+            <div style="color:#22c55e;font-weight:700;">🟢 أخضر = نجح (Success)</div>
+            <div style="color:#f59e0b;font-weight:700;">🟡 أصفر = نجح جزئياً (Partial)</div>
+            <div style="color:#ef4444;font-weight:700;">🔴 أحمر = فشل (Failed)</div>
+            <div style="color:#94a3b8;font-weight:700;">⚪ رمادي = غير مطلوب (Not Requested)</div>
+          </div>
+
+          <div class="input-group" style="margin-top:30px;">
+            <label>اسم ملف المخرجات</label>
+            <input type="text" id="outputFilename" value="rotated" placeholder="rotated">
+          </div>
+
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="goTo('screen-password')">← رجوع</button>
+        <button class="btn btn-primary" onclick="startRotation()">تنفيذ ←</button>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         الشاشة 7: التنفيذ
+         ============================================================ -->
+    <div class="screen" id="screen-progress">
+      <div class="steps-bar">
+        <div class="step-item done">1 — الدخول</div>
+        <div class="step-item done">2 — التحذيرات</div>
+        <div class="step-item done">3 — الإدخال</div>
+        <div class="step-item done">4 — الخيارات</div>
+        <div class="step-item active">5 — التنفيذ</div>
+      </div>
+
+      <div class="screen-header">
+        <span class="screen-num">[4]</span>
+        <span class="screen-title">جارٍ التنفيذ</span>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="red"></span><span class="yellow"></span><span class="green"></span>
+          </div>
+          <div class="terminal-title">execution.log</div>
+        </div>
+        <div class="terminal-body">
+
+          <div class="info-box">
+            اترك الصفحة مفتوحة — التقدم يظهر مباشرة من السيرفر.
+          </div>
+
+          <div class="progress-container">
+            <div class="progress-label">
+              <span id="progressText">0 / 0</span>
+              <span id="progressPercent">0%</span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value green" id="statSuccess">0</div>
+              <div class="stat-label">نجح</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value red" id="statFail">0</div>
+              <div class="stat-label">فشل</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value yellow" id="statTotal">0</div>
+              <div class="stat-label">الإجمالي</div>
+            </div>
+          </div>
+
+          <div class="log-box" id="logBox"></div>
+
+        </div>
+      </div>
+
+      <div class="btn-row" id="progressActions" style="display:none;justify-content:flex-end;">
+        <button class="btn btn-success" onclick="goTo('screen-result')">عرض النتائج ←</button>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         الشاشة 8: النتائج
+         ============================================================ -->
+    <div class="screen" id="screen-result">
+      <div class="steps-bar">
+        <div class="step-item done">1 — الدخول</div>
+        <div class="step-item done">2 — التحذيرات</div>
+        <div class="step-item done">3 — الإدخال</div>
+        <div class="step-item done">4 — الخيارات</div>
+        <div class="step-item done">5 — النتائج</div>
+      </div>
+
+      <div class="screen-header">
+        <span class="screen-num">[5]</span>
+        <span class="screen-title">النتائج</span>
+      </div>
+
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dots">
+            <span class="red"></span><span class="yellow"></span><span class="green"></span>
+          </div>
+          <div class="terminal-title">output.xlsx</div>
+        </div>
+        <div class="terminal-body">
+
+          <div class="success-box">
+            ✓ تمت العملية بنجاح
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value green" id="finalSuccess">0</div>
+              <div class="stat-label">نجح</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value red" id="finalFail">0</div>
+              <div class="stat-label">فشل</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value yellow" id="finalTotal">0</div>
+              <div class="stat-label">الإجمالي</div>
+            </div>
+          </div>
+
+          <div class="info-box" style="margin-top:25px;">
+            الملفات جاهزة: rotated.xlsx + rotated.txt
+          </div>
+
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" onclick="resetAll()">عملية جديدة</button>
+        <button class="btn btn-primary" onclick="downloadExcel()">⬇ تحميل Excel</button>
+        <button class="btn btn-primary" onclick="downloadText()">⬇ تحميل TXT</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================
+     التذييل
+     ============================================================ -->
+<div class="footer">
+  <div class="footer-left">
+    <span>◈</span>
+    <span>شادو روتيت</span>
+  </div>
+  <div class="footer-center">
+    <button class="footer-btn" onclick="openModal('modal-about')">نبذة عنا</button>
+    <button class="footer-btn" onclick="openModal('modal-features')">مميزات التطبيق</button>
+    <button class="footer-btn" onclick="openModal('modal-contact')">تواصل معنا</button>
+  </div>
+  <div class="footer-right">
+    © 2025 جميع الحقوق محفوظة — أحمد ناصر
+  </div>
+</div>
+
+<!-- ============================================================
+     مودال: نبذة عنا
+     ============================================================ -->
+<div class="modal-overlay" id="modal-about">
+  <div class="modal">
+    <h3>نبذة عنا</h3>
+    <div id="aboutContent">
+      <p>شادو روتيت هو نظام احترافي متكامل لإدارة الحسابات بشكل آلي بالكامل. صُمم النظام ليكون أداة قوية وسريعة لتأمين الحسابات وتغيير بياناتها وحمايتها من الاختراق.</p>
+      <p>يعتمد النظام على تقنيات حديثة في الأتمتة (Playwright + Chromium) لتنفيذ كل العمليات بدقة عالية وسرعة فائقة، مع الحفاظ على أمان البيانات وتشفيرها.</p>
+      <h4>مهمتنا</h4>
+      <p>تمكين المستخدمين من إدارة حساباتهم بسهولة وأمان، بدون الحاجة لخبرة تقنية عميقة.</p>
+      <h4>من صمم النظام</h4>
+      <div class="contact-item">
+        <span class="icon">👤</span>
+        <span class="text">أحمد ناصر</span>
+      </div>
+      <div class="contact-item">
+        <span class="icon">📱</span>
+        <span class="text">012 27176398</span>
+      </div>
+    </div>
+    <button class="modal-close" onclick="closeModal('modal-about')">إغلاق</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     مودال: مميزات التطبيق
+     ============================================================ -->
+<div class="modal-overlay" id="modal-features">
+  <div class="modal">
+    <h3>مميزات التطبيق</h3>
+    <div id="featuresContent">
+      <ul>
+        <li>🔐 تسجيل دخول آمن بـ 3 طبقات (إيميل + باسورد + TOTP)</li>
+        <li>🔑 3 أنظمة لتوليد كلمات المرور + نظام يدوي</li>
+        <li>📧 تغيير بريد الاسترداد بدون تأكيد</li>
+        <li>🎟️ توليد رموز احتياطية جديدة (10 رموز)</li>
+        <li>🛡️ تغيير رمز 2FA (TOTP) بشكل آمن</li>
+        <li>🚪 تسجيل خروج من جميع الأجهزة</li>
+        <li>📱 حذف أرقام الاسترداد</li>
+        <li>▶️ جمع بيانات يوتيوب (قناة + تاريخ + مشتركين + فيديوهات)</li>
+        <li>🗺️ جمع بيانات خرائط جوجل (مستوى + نقاط + مراجعات + تعديلات)</li>
+        <li>☁️ جمع مساحة التخزين Drive</li>
+        <li>🔗 جمع التطبيقات المرتبطة + كشف فيسبوك</li>
+        <li>💼 كشف نشاط جوجل التجاري</li>
+        <li>🌍 كشف الدولة</li>
+        <li>🎨 تلوين تلقائي للإكسل (أخضر / أصفر / أحمر)</li>
+        <li>📊 تصدير Excel + TXT</li>
+        <li>🌙 وضع ليلي احترافي (Matrix)</li>
+        <li>☀️ وضع نهاري مريح للعين</li>
+        <li>🌍 دعم اللغتين (عربي / إنجليزي)</li>
+        <li>💬 دعم عبر واتساب</li>
+        <li>🔒 تشفير كامل للبيانات</li>
+        <li>⚡ سرعة مضاعفة في النسخة المدفوعة</li>
+      </ul>
+    </div>
+    <button class="modal-close" onclick="closeModal('modal-features')">إغلاق</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     مودال: تواصل معنا
+     ============================================================ -->
+<div class="modal-overlay" id="modal-contact">
+  <div class="modal">
+    <h3>تواصل معنا</h3>
+    <div id="contactContent">
+      <p>نحن هنا لمساعدتك في أي وقت. اختر وسيلة التواصل التي تناسبك:</p>
+      <div class="contact-item">
+        <span class="icon">💬</span>
+        <span class="text">واتساب: 012 27176398</span>
+      </div>
+      <div class="contact-item">
+        <span class="icon">👤</span>
+        <span class="text">أحمد ناصر</span>
+      </div>
+      <p style="margin-top:20px;">للاشتراك في النسخة المدفوعة أو الاستفسار عن الخطط المتاحة، تواصل معنا مباشرة عبر واتساب.</p>
+      <div style="text-align:center;margin-top:20px;">
+        <button class="btn btn-primary" onclick="openWhatsApp('contact')">💬 افتح واتساب</button>
+      </div>
+    </div>
+    <button class="modal-close" onclick="closeModal('modal-contact')">إغلاق</button>
+  </div>
+</div>
+
+<!-- JavaScript هيستمر في الرد الجاي -->
+    <script>
+// ============================================================
+// الإعدادات العامة
+// ============================================================
+const API = 'http://127.0.0.1:8000';
+const WHATSAPP_NUMBER = '201227176398';
+
+// ============================================================
+// حالة التطبيق
+// ============================================================
+const state = {
+  accounts: [],
+  passwordSystem: 'ahm',
+  manualPassword: '',
+  customPrefix: '',
+  randomLength: 16,
+  changePw: true,
+  changeRecovery: false,
+  changeBackup: false,
+  change2fa: false,
+  signout: false,
+  removePhones: false,
+  gather: false,
+  gatherYoutube: false,
+  gatherMaps: false,
+  gatherDrive: false,
+  gatherApps: false,
+  gatherBusiness: false,
+  gatherCountry: false,
+  coloring: false,
+  outputFilename: 'rotated',
+  sessionId: null,
+  isPro: false,
+  userEmail: '',
+  language: 'ar',
+  theme: 'dark',
+};
+
+// ============================================================
+// التنقل بين الشاشات
+// ============================================================
+function goTo(screenId) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(screenId);
+  if (target) {
+    target.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+// ============================================================
+// اللغة
+// ============================================================
+function setLanguage(lang) {
+  state.language = lang;
+  localStorage.setItem('shadow_lang', lang);
+
+  document.getElementById('langAr').classList.toggle('active', lang === 'ar');
+  document.getElementById('langEn').classList.toggle('active', lang === 'en');
+
+  const html = document.documentElement;
+  html.lang = lang;
+  html.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+  if (lang === 'en') {
+    document.querySelector('.brand span:last-child').textContent = 'ShadowRotate';
+    document.querySelector('.glitch-title').textContent = 'SHADOWROTATE';
+    document.querySelector('.glitch-title').setAttribute('data-text', 'SHADOWROTATE');
+    document.querySelectorAll('.tagline')[0].textContent = 'PROFESSIONAL ACCOUNT MANAGEMENT';
+    document.querySelectorAll('.tagline')[1].textContent = 'VERSION 3.0 — PRO EDITION';
+    document.querySelectorAll('.footer-btn')[0].textContent = 'About';
+    document.querySelectorAll('.footer-btn')[1].textContent = 'Features';
+    document.querySelectorAll('.footer-btn')[2].textContent = 'Contact';
+    document.querySelector('.footer-right').textContent = '© 2025 ALL RIGHTS RESERVED — AHMED NASER';
+  } else {
+    document.querySelector('.brand span:last-child').textContent = 'شادو روتيت';
+    document.querySelector('.glitch-title').textContent = 'شادو روتيت';
+    document.querySelector('.glitch-title').setAttribute('data-text', 'شادو روتيت');
+    document.querySelectorAll('.tagline')[0].textContent = 'نظام إدارة الحسابات الاحترافي';
+    document.querySelectorAll('.tagline')[1].textContent = 'الإصدار 3.0 — النسخة الاحترافية';
+    document.querySelectorAll('.footer-btn')[0].textContent = 'نبذة عنا';
+    document.querySelectorAll('.footer-btn')[1].textContent = 'مميزات التطبيق';
+    document.querySelectorAll('.footer-btn')[2].textContent = 'تواصل معنا';
+    document.querySelector('.footer-right').textContent = '© 2025 جميع الحقوق محفوظة — أحمد ناصر';
+  }
+}
+
+// ============================================================
+// تبديل الوضع (ليلي / نهاري)
+// ============================================================
+function toggleTheme() {
+  const body = document.body;
+  body.classList.toggle('light-mode');
+  const isLight = body.classList.contains('light-mode');
+  state.theme = isLight ? 'light' : 'dark';
+  localStorage.setItem('shadow_theme', state.theme);
+  document.getElementById('themeIcon').textContent = isLight ? '☀' : '☾';
+}
+
+function restoreTheme() {
+  const saved = localStorage.getItem('shadow_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light-mode');
+    document.getElementById('themeIcon').textContent = '☀';
+    state.theme = 'light';
+  }
+}
+
+// ============================================================
+// واتساب
+// ============================================================
+function openWhatsApp(context) {
+  const messages = {
+    default: 'أهلاً، أنا جاي من تطبيق شادو روتيت وأحتاج استفسار.',
+    daily: 'أهلاً، أنا مهتم بالاشتراك في خطة اليومي ($3) من شادو روتيت.',
+    weekly: 'أهلاً، أنا مهتم بالاشتراك في خطة الأسبوعي ($12) من شادو روتيت.',
+    monthly: 'أهلاً، أنا مهتم بالاشتراك في خطة الشهري ($35) من شادو روتيت.',
+    lifetime: 'أهلاً، أنا مهتم بالاشتراك في خطة مدى الحياة ($199) من شادو روتيت.',
+    contact: 'أهلاً، أنا جاي من تطبيق شادو روتيت وأحتاج مساعدة.',
+  };
+  const msg = messages[context] || messages.default;
+  const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+  window.open(url, '_blank');
+}
+
+// ============================================================
+// المودالات
+// ============================================================
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('active');
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+  }
+});
+
+// ============================================================
+// فحص حالة السيرفر
+// ============================================================
+async function checkServer() {
+  const dot = document.getElementById('serverDot');
+  const txt = document.getElementById('serverText');
+  try {
+    const r = await fetch(`${API}/health`, { signal: AbortSignal.timeout(3000) });
+    if (r.ok) {
+      dot.className = 'status-dot online';
+      txt.textContent = 'متصل بالسيرفر';
+    } else throw new Error();
+  } catch (e) {
+    dot.className = 'status-dot offline';
+    txt.textContent = 'السيرفر غير متصل';
+  }
+}
+
+// ============================================================
+// التجربة المجانية
+// ============================================================
+function startFreeTrial() {
+  const used = parseInt(localStorage.getItem('shadow_trial_used') || '0');
+  if (used >= 5) {
+    alert('انتهت التجربة المجانية. تواصل معنا للاشتراك في النسخة المدفوعة.');
+    openWhatsApp('contact');
+    return;
+  }
+  state.isPro = false;
+  document.getElementById('trialBadge').classList.add('active');
+  updateTrialBadge();
+  goTo('screen-accounts');
+}
+
+function updateTrialBadge() {
+  const used = parseInt(localStorage.getItem('shadow_trial_used') || '0');
+  const left = Math.max(0, 5 - used);
+  const badge = document.getElementById('trialText');
+  if (badge) badge.textContent = `التجربة المجانية: ${left} حسابات متبقية`;
+  if (left <= 0) document.getElementById('trialBadge').classList.remove('active');
+}
+
+// ============================================================
+// تسجيل الدخول
+// ============================================================
+async function attemptLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const msgBox = document.getElementById('loginMessage');
+  const btn = document.getElementById('loginBtn');
+
+  if (!email || !password) {
+    msgBox.innerHTML = '<div class="error-box">من فضلك املأ الحقلين</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> جارٍ التحقق...';
+
+  try {
+    const resp = await fetch(`${API}/auth`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok || !data.success) {
+      msgBox.innerHTML = `<div class="error-box">${data.message || 'فشل تسجيل الدخول'}</div>`;
+      btn.disabled = false;
+      btn.textContent = 'دخول ←';
+      return;
+    }
+
+    state.isPro = true;
+    state.userEmail = email;
+    localStorage.setItem('shadow_pro', 'yes');
+    localStorage.setItem('shadow_user', email);
+
+    msgBox.innerHTML = '<div class="success-box">✓ تم تسجيل الدخول بنجاح — مرحباً بك!</div>';
+    setTimeout(() => goTo('screen-warnings'), 800);
+
+  } catch (e) {
+    msgBox.innerHTML = '<div class="error-box">السيرفر غير متصل — تأكد أن server.py شغّال</div>';
+    btn.disabled = false;
+    btn.textContent = 'دخول ←';
+  }
+}
+
+// ============================================================
+// التحذيرات
+// ============================================================
+function toggleAgree() {
+  const cb = document.getElementById('agreeCheckbox');
+  cb.checked = !cb.checked;
+  document.getElementById('warnContinueBtn').disabled = !cb.checked;
+}
+
+function continueFromWarnings() {
+  if (!document.getElementById('agreeCheckbox').checked) return;
+  goTo('screen-accounts');
+}
+
+// ============================================================
+// إدارة الحسابات
+// ============================================================
+function loadSample() {
+  document.getElementById('accountsInput').value =
+    'sample1@gmail.com\tOldPass123\trecovery1@gmail.com\t2022\tAAAA1111BBBB2222CCCC3333DDDD4444\t1234 5678 9012 3456\n' +
+    'sample2@gmail.com\tOldPass456\trecovery2@gmail.com\t2021\tEEEE5555FFFF6666GGGG7777HHHH8888\t2345 6789 0123 4567';
+}
+
+function clearAccounts() {
+  document.getElementById('accountsInput').value = '';
+  document.getElementById('accountsInfo').innerHTML = '';
+}
+
+async function pasteFromClipboard() {
+  try {
+    const text = await navigator.clipboard.readText();
+    document.getElementById('accountsInput').value = text;
+  } catch (e) {
+    alert('متاح الوصول للحافظة مرفوض');
+  }
+}
+
+function loadFromFile() {
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = '.txt,.csv';
+  inp.onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      document.getElementById('accountsInput').value = ev.target.result;
+    };
+    reader.readAsText(file);
+  };
+  inp.click();
+}
+
+function parseAccounts(text) {
+  const lines = text.trim().split('\n').filter(l => l.trim());
+  const accounts = [];
+  for (const line of lines) {
+    let parts = line.split('\t').map(p => p.trim()).filter(p => p);
+    if (parts.length < 5) parts = line.split(/\s{2,}/).map(p => p.trim()).filter(p => p);
+    if (parts.length < 5) {
+      const tokens = line.trim().split(/\s+/);
+      if (tokens.length >= 5) {
+        accounts.push({
+          email: tokens[0], password: tokens[1],
+          recovery: tokens[2] || '', year: tokens[3] || '',
+          totp: tokens[4] || '', backupCodes: tokens.slice(5).join(' ') || ''
+        });
+      }
+      continue;
+    }
+    accounts.push({
+      email: parts[0] || '', password: parts[1] || '',
+      recovery: parts[2] || '', year: parts[3] || '',
+      totp: parts[4] || '', backupCodes: parts.slice(5).join(' ') || ''
+    });
+  }
+  return accounts.filter(a => a.email && a.email.includes('@'));
+}
+
+function validateAccounts() {
+  const text = document.getElementById('accountsInput').value;
+  const accounts = parseAccounts(text);
+  const info = document.getElementById('accountsInfo');
+
+  if (accounts.length === 0) {
+    info.innerHTML = '<div class="error-box">لا توجد حسابات صالحة</div>';
+    return;
+  }
+
+  if (!state.isPro) {
+    const used = parseInt(localStorage.getItem('shadow_trial_used') || '0');
+    if (used + accounts.length > 5) {
+      info.innerHTML = `<div class="error-box">التجربة المجانية تسمح بـ 5 حسابات فقط. استخدمت ${used}. اشترك في النسخة المدفوعة.</div>`;
+      return;
+    }
+  }
+
+  state.accounts = accounts;
+  const valid = accounts.filter(a => a.email.includes('@') && a.password.length >= 6).length;
+  info.innerHTML = `<div class="success-box">تم تحميل ${accounts.length} حساب (${valid} صالح)</div>`;
+  setTimeout(() => goTo('screen-password'), 600);
+}
+
+// ============================================================
+// نظام الباسورد
+// ============================================================
+function selectSystem(sys) {
+  state.passwordSystem = sys;
+  document.querySelectorAll('.system-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('opt-manual').classList.remove('selected');
+
+  if (sys === 'ahm') document.getElementById('sys-ahm').classList.add('selected');
+  else if (sys === 'rdw') document.getElementById('sys-rdw').classList.add('selected');
+  else if (sys === 'custom') document.getElementById('sys-custom').classList.add('selected');
+  else if (sys === 'manual') {
+    document.getElementById('opt-manual').classList.add('selected');
+    document.getElementById('cb-manual').checked = true;
+  }
+
+  document.getElementById('manualPwGroup').style.display = sys === 'manual' ? 'block' : 'none';
+  document.getElementById('customPwGroup').style.display = sys === 'custom' ? 'block' : 'none';
+  document.getElementById('lengthGroup').style.display = sys === 'manual' ? 'none' : 'block';
+  document.getElementById('pwPreviewBox').innerHTML = '';
+  if (sys !== 'manual') showPreview();
+}
+
+function showPreview() {
+  const box = document.getElementById('pwPreviewBox');
+  if (!state.accounts.length) return;
+  const len = parseInt(document.getElementById('randomLength').value) || 16;
+  const examples = [];
+  for (let i = 0; i < Math.min(3, state.accounts.length); i++) {
+    examples.push({ email: state.accounts[i].email, pw: genPreviewPw(len) });
+  }
+  box.innerHTML = '<label style="display:block;font-family:Cairo;font-size:13px;font-weight:700;color:var(--matrix);margin:20px 0 10px;text-align:right;">أمثلة على الباسوردات:</label>' +
+    examples.map(e => `<div class="pw-preview-item"><span class="pw-email">${e.email}</span><span class="pw-value">${e.pw}</span></div>`).join('');
+}
+
+function genPreviewPw(len) {
+  const pool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let prefix = '';
+  if (state.passwordSystem === 'ahm') prefix = 'AHM-';
+  else if (state.passwordSystem === 'rdw') prefix = 'RDW-';
+  else if (state.passwordSystem === 'custom') {
+    prefix = (document.getElementById('customPrefix').value || 'Custom-');
+    if (!prefix.endsWith('-') && !prefix.endsWith('_')) prefix += '-';
+  }
+  const remaining = Math.max(4, len - prefix.length);
+  let pw = '';
+  for (let i = 0; i < remaining; i++) pw += pool[Math.floor(Math.random() * pool.length)];
+  return prefix + pw;
+}
+
+// ============================================================
+// الخيارات
+// ============================================================
+function toggleOption(key) {
+  const cbMap = {
+    changePw: 'cb-changePw', changeRecovery: 'cb-changeRecovery',
+    changeBackup: 'cb-changeBackup', change2fa: 'cb-change2fa',
+    signout: 'cb-signout', removePhones: 'cb-removePhones',
+    gather: 'cb-gather', gatherYoutube: 'cb-gatherYoutube',
+    gatherMaps: 'cb-gatherMaps', gatherDrive: 'cb-gatherDrive',
+    gatherApps: 'cb-gatherApps', gatherBusiness: 'cb-gatherBusiness',
+    gatherCountry: 'cb-gatherCountry', coloring: 'cb-coloring',
+  };
+  const cardMap = {
+    changePw: 'opt-change-pw', changeRecovery: 'opt-change-recovery',
+    changeBackup: 'opt-change-backup', change2fa: 'opt-change-2fa',
+    signout: 'opt-signout', removePhones: 'opt-remove-phones',
+    gather: 'opt-gather', gatherYoutube: 'opt-gather-youtube',
+    gatherMaps: 'opt-gather-maps', gatherDrive: 'opt-gather-drive',
+    gatherApps: 'opt-gather-apps', gatherBusiness: 'opt-gather-business',
+    gatherCountry: 'opt-gather-country', coloring: 'opt-coloring',
+  };
+
+  const cb = document.getElementById(cbMap[key]);
+  if (!cb) return;
+  cb.checked = !cb.checked;
+  state[key] = cb.checked;
+
+  const card = document.getElementById(cardMap[key]);
+  if (cb.checked) card.classList.add('selected');
+  else card.classList.remove('selected');
+
+  if (key === 'gather') {
+    document.getElementById('gatherSubOptions').style.display = cb.checked ? 'block' : 'none';
+  }
+  if (key === 'coloring') {
+    document.getElementById('coloringLegend').style.display = cb.checked ? 'block' : 'none';
+  }
+}
+
+function selectAll() {
+  const keys = ['changePw', 'changeRecovery', 'changeBackup', 'change2fa',
+                'signout', 'removePhones', 'gather', 'gatherYoutube',
+                'gatherMaps', 'gatherDrive', 'gatherApps', 'gatherBusiness',
+                'gatherCountry'];
+  keys.forEach(k => { if (!state[k]) toggleOption(k); });
+}
+
+function changeAllData() {
+  const keys = ['changePw', 'changeRecovery', 'changeBackup', 'change2fa', 'signout', 'removePhones'];
+  keys.forEach(k => { if (!state[k]) toggleOption(k); });
+}
+
+function fetchAllInfo() {
+  const keys = ['gather', 'gatherYoutube', 'gatherMaps', 'gatherDrive',
+                'gatherApps', 'gatherBusiness', 'gatherCountry'];
+  keys.forEach(k => { if (!state[k]) toggleOption(k); });
+}
+
+function deselectAll() {
+  const keys = ['changePw', 'changeRecovery', 'changeBackup', 'change2fa',
+                'signout', 'removePhones', 'gather', 'gatherYoutube',
+                'gatherMaps', 'gatherDrive', 'gatherApps', 'gatherBusiness',
+                'gatherCountry', 'coloring'];
+  keys.forEach(k => { if (state[k]) toggleOption(k); });
+}
+
+// ============================================================
+// بدء التنفيذ
+// ============================================================
+async function startRotation() {
+  if (state.accounts.length === 0) { alert('لا توجد حسابات'); return; }
+  if (!state.changePw && !state.changeRecovery && !state.change2fa &&
+      !state.changeBackup && !state.signout && !state.removePhones && !state.gather) {
+    alert('اختر عملية واحدة على الأقل');
+    return;
+  }
+
+  state.manualPassword = document.getElementById('manualPassword').value;
+  state.customPrefix = document.getElementById('customPrefix').value;
+  state.randomLength = parseInt(document.getElementById('randomLength').value) || 16;
+  state.outputFilename = document.getElementById('outputFilename').value || 'rotated';
+
+  goTo('screen-progress');
+  document.getElementById('statTotal').textContent = state.accounts.length;
+  document.getElementById('statSuccess').textContent = '0';
+  document.getElementById('statFail').textContent = '0';
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('progressText').textContent = `0 / ${state.accounts.length}`;
+  document.getElementById('progressPercent').textContent = '0%';
+  document.getElementById('logBox').innerHTML = '';
+  document.getElementById('progressActions').style.display = 'none';
+
+  addLog('info', 'جارٍ بدء الاتصال بالسيرفر...');
+
+  try {
+    const resp = await fetch(`${API}/rotate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        accounts: state.accounts,
+        options: {
+          changePw: state.changePw,
+          changeRecovery: state.changeRecovery,
+          change2fa: state.change2fa,
+          changeBackup: state.changeBackup,
+          signout: state.signout,
+          removePhones: state.removePhones,
+          gather: state.gather,
+          gatherYoutube: state.gatherYoutube,
+          gatherMaps: state.gatherMaps,
+          gatherDrive: state.gatherDrive,
+          gatherApps: state.gatherApps,
+          gatherBusiness: state.gatherBusiness,
+          gatherCountry: state.gatherCountry,
+          coloring: state.coloring,
+          passwordSystem: state.passwordSystem,
+          manualPassword: state.manualPassword,
+          customPrefix: state.customPrefix,
+          randomLength: state.randomLength,
+          outputFilename: state.outputFilename,
+          isPro: state.isPro,
+          userEmail: state.userEmail || '',
+        }
+      })
+    });
+
+    if (!resp.ok) { addLog('error', 'السيرفر رفض الطلب'); return; }
+
+    const data = await resp.json();
+    state.sessionId = data.session_id;
+    addLog('success', `بدأت الجلسة: ${state.sessionId}`);
+    pollProgress();
+
+  } catch (e) {
+    addLog('error', `فشل الاتصال: ${e.message}`);
+    addLog('warn', 'تأكد أن server.py شغّال على port 8000');
+  }
+}
+
+// ============================================================
+// متابعة التقدم
+// ============================================================
+async function pollProgress() {
+  if (!state.sessionId) return;
+  try {
+    const resp = await fetch(`${API}/status/${state.sessionId}`);
+    if (!resp.ok) throw new Error();
+    const data = await resp.json();
+
+    const total = data.total || state.accounts.length;
+    const done = data.done || 0;
+
+    document.getElementById('progressFill').style.width = `${(done / total) * 100}%`;
+    document.getElementById('progressText').textContent = `${done} / ${total}`;
+    document.getElementById('progressPercent').textContent = `${Math.round((done / total) * 100)}%`;
+    document.getElementById('statSuccess').textContent = data.success || 0;
+    document.getElementById('statFail').textContent = data.fail || 0;
+
+    if (data.new_logs) {
+      for (const line of data.new_logs) addLog(line.level || 'info', line.message);
+    }
+
+    if (data.finished) {
+      addLog('success', 'تمت معالجة جميع الحسابات');
+      document.getElementById('progressActions').style.display = 'flex';
+      document.getElementById('finalSuccess').textContent = data.success || 0;
+      document.getElementById('finalFail').textContent = data.fail || 0;
+      document.getElementById('finalTotal').textContent = total;
+
+      if (!state.isPro) {
+        const used = parseInt(localStorage.getItem('shadow_trial_used') || '0');
+        localStorage.setItem('shadow_trial_used', used + state.accounts.length);
+        updateTrialBadge();
+      }
+      return;
+    }
+    setTimeout(pollProgress, 1500);
+  } catch (e) {
+    setTimeout(pollProgress, 3000);
+  }
+}
+
+// ============================================================
+// السجل
+// ============================================================
+function addLog(level, message) {
+  const box = document.getElementById('logBox');
+  const line = document.createElement('div');
+  line.className = `log-line ${level}`;
+  const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+  line.innerHTML = `<span class="log-time">[${ts}]</span><span class="log-msg">${message}</span>`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+// ============================================================
+// التحميل
+// ============================================================
+function downloadExcel() {
+  if (!state.sessionId) { alert('لا يوجد ملف'); return; }
+  window.location.href = `${API}/download-excel/${state.sessionId}`;
+}
+
+function downloadText() {
+  if (!state.sessionId) { alert('لا يوجد ملف'); return; }
+  window.location.href = `${API}/download-text/${state.sessionId}`;
+}
+
+// ============================================================
+// إعادة تعيين
+// ============================================================
+function resetAll() {
+  state.accounts = [];
+  state.sessionId = null;
+  state.isPro = false;
+  document.getElementById('accountsInput').value = '';
+  document.getElementById('accountsInfo').innerHTML = '';
+  document.getElementById('manualPassword').value = '';
+  document.getElementById('customPrefix').value = '';
+  document.getElementById('logBox').innerHTML = '';
+  document.getElementById('gatherSubOptions').style.display = 'none';
+  document.getElementById('coloringLegend').style.display = 'none';
+  document.getElementById('trialBadge').classList.remove('active');
+  selectSystem('ahm');
+  goTo('screen-welcome');
+}
+
+// ============================================================
+// Matrix Rain
+// ============================================================
+(function initMatrix() {
+  const canvas = document.getElementById('matrixCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const chars = 'アカサタナハマヤラワガザダバパイキシチニヒミリギジヂビピウクスツヌフムユルグズヅブプエケセテネヘメレゲゼデベペオコソトノホモヨロヲゴゾドボポヴッン0123456789ABCDEFabcdef';
+  const fontSize = 15;
+  let columns = Math.floor(canvas.width / fontSize);
+  let drops = new Array(columns).fill(1);
+
+  window.addEventListener('resize', () => {
+    columns = Math.floor(canvas.width / fontSize);
+    drops = new Array(columns).fill(1);
+  });
+
+  function draw() {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#00ff41';
+    ctx.font = fontSize + 'px monospace';
+    for (let i = 0; i < drops.length; i++) {
+      const text = chars[Math.floor(Math.random() * chars.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+  }
+  setInterval(draw, 55);
+})();
+
+// ============================================================
+// الجزيئات الطائرة
+// ============================================================
+(function initParticles() {
+  const chars = '01';
+  setInterval(() => {
+    if (document.body.classList.contains('light-mode')) return;
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = chars[Math.floor(Math.random() * chars.length)];
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = '-20px';
+    p.style.opacity = '0';
+    p.style.transition = `transform ${5 + Math.random() * 5}s linear, opacity 1s ease`;
+    document.body.appendChild(p);
+    requestAnimationFrame(() => {
+      p.style.opacity = '0.6';
+      p.style.transform = `translateY(${window.innerHeight + 40}px)`;
+    });
+    setTimeout(() => p.remove(), 12000);
+  }, 800);
+})();
+
+// ============================================================
+// التشغيل الابتدائي
+// ============================================================
+(function init() {
+  restoreTheme();
+  const savedLang = localStorage.getItem('shadow_lang') || 'ar';
+  setLanguage(savedLang);
+  updateTrialBadge();
+  checkServer();
+  setInterval(checkServer, 5000);
+
+  if (localStorage.getItem('shadow_pro') === 'yes') {
+    state.isPro = true;
+    state.userEmail = localStorage.getItem('shadow_user') || '';
+  }
+
+  selectSystem('ahm');
+
+  document.getElementById('randomLength').addEventListener('input', showPreview);
+  document.getElementById('customPrefix')?.addEventListener('input', showPreview);
+})();
+</script>
+
+</body>
+</html>
